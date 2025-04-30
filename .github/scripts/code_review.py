@@ -4,16 +4,29 @@ from github import Github
 
 # Initialize GitHub API
 github_token = os.getenv("GITHUB_TOKEN")
+if not github_token:
+    print("Error: GITHUB_TOKEN is not set.")
+    exit(1)
+
 g = Github(github_token)
 
 # Get PR details
 repo_name = os.getenv("GITHUB_REPOSITORY")
-pr_number = int(os.getenv("GITHUB_EVENT_PULL_REQUEST_NUMBER"))
+pr_number = os.getenv("GITHUB_EVENT_PULL_REQUEST_NUMBER")
+if not repo_name or not pr_number:
+    print("Error: GITHUB_REPOSITORY or GITHUB_EVENT_PULL_REQUEST_NUMBER is not set.")
+    exit(1)
+
+pr_number = int(pr_number)
 repo = g.get_repo(repo_name)
 pr = repo.get_pull(pr_number)
 
 # Gemini API setup
 gemini_api_key = os.getenv("GEMINI_API_KEY")
+if not gemini_api_key:
+    pr.create_issue_comment("Error: GEMINI_API_KEY is not set in the repository secrets.")
+    exit(1)
+
 gemini_endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent"
 
 # Log PR details
@@ -26,7 +39,7 @@ for file in pr.get_files():
         print(f"No patch for file {file.filename}, skipping...")
         continue
 
-    # Skip non-code files
+    # Allow code files and .txt for testing
     if not file.filename.endswith(('.py', '.js', '.java', '.cpp', '.txt')):
         print(f"Skipping non-code file: {file.filename}")
         continue
@@ -37,14 +50,13 @@ for file in pr.get_files():
 
     # Prepare prompt for Gemini
     prompt = f"""
-    Analyze the following code diff and provide specific, actionable suggestions for improvement. Focus on:
-    - Syntax errors: Identify and suggest fixes.
+    Analyze the following diff and provide specific, actionable suggestions for improvement. Focus on:
+    - Syntax errors: Identify and suggest fixes (if applicable).
     - Bugs: Point out logical errors or potential issues.
-    - Code quality: Suggest better structure, naming, or readability improvements.
-    - Security: Highlight any security vulnerabilities.
-    - Performance: Note any performance issues.
-    - Best practices: Ensure adherence to language-specific best practices (e.g., PEP 8 for Python, ES6 for JavaScript).
-    Provide code examples where applicable:
+    - Content quality: Suggest improvements for clarity or structure (e.g., for text files).
+    - Security: Highlight any security vulnerabilities (if applicable).
+    - Best practices: Ensure adherence to best practices (e.g., PEP 8 for Python, ES6 for JavaScript, or clear documentation for text files).
+    Provide examples where applicable:
     ```diff
     {patch}
     """
@@ -89,3 +101,4 @@ for file in pr.get_files():
         pr.create_issue_comment(f"### Review for {file.filename}\n{review}")
     except Exception as e:
         print(f"Failed to post comment for {file.filename}: {str(e)}")
+        exit(1)

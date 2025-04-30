@@ -27,7 +27,7 @@ for file in pr.get_files():
         continue
 
     # Skip non-code files
-    if not file.filename.endswith(('.py', '.js', '.java', '.cpp')):
+    if not file.filename.endswith(('.py', '.js', '.java', '.cpp', '.txt')):
         print(f"Skipping non-code file: {file.filename}")
         continue
 

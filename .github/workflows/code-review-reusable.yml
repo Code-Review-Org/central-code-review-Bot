@@ -68,5 +68,6 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           echo "Starting code review for PR #$GITHUB_EVENT_PULL_REQUEST_NUMBER in $GITHUB_REPOSITORY"
+          echo "GEMINI_API_KEY is set to: $GEMINI_API_KEY"
           python  central-code-review-Bot/.github/scripts/code_review.py
           echo "Code review completed"
